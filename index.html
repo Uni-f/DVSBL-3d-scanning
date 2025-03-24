@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Body Scanner</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        video { border: 2px solid black; }
+        .overlay { 
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0, 0, 0, 0.8);
+            color: white; font-size: 24px;
+            display: flex; align-items: center; justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Stand in front of the camera</h1>
+    <video id="video" autoplay playsinline></video>
+    <div id="overlay" class="overlay">Your size is M</div>
+    <script>
+        async function setupCamera() {
+            const video = document.getElementById('video');
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+        }
+        
+        async function estimateSize() {
+            const detector = await poseDetection.createDetector(poseDetection.SupportedModels.BlazePose);
+            const video = document.getElementById('video');
+            
+            setInterval(async () => {
+                const poses = await detector.estimatePoses(video);
+                if (poses.length > 0) {
+                    const landmarks = poses[0].keypoints;
+                    const shoulderWidth = Math.abs(landmarks[11].x - landmarks[12].x);
+                    let size = 'M';
+                    if (shoulderWidth < 100) size = 'S';
+                    else if (shoulderWidth > 180) size = 'L';
+                    document.getElementById('overlay').innerText = `Your size is ${size}`;
+                    document.getElementById('overlay').style.display = 'flex';
+                }
+            }, 3000);
+        }
+        
+        setupCamera().then(estimateSize);
+    </script>
+</body>
+</html>
